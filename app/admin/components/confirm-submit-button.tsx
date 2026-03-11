@@ -1,0 +1,27 @@
+"use client";
+
+type ConfirmSubmitButtonProps = {
+  children: React.ReactNode;
+  confirmMessage: string;
+  className?: string;
+};
+
+export function ConfirmSubmitButton({
+  children,
+  confirmMessage,
+  className,
+}: ConfirmSubmitButtonProps) {
+  return (
+    <button
+      type="submit"
+      onClick={(event) => {
+        if (!window.confirm(confirmMessage)) {
+          event.preventDefault();
+        }
+      }}
+      className={className}
+    >
+      {children}
+    </button>
+  );
+}

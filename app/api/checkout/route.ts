@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
@@ -26,9 +27,15 @@ const DEFAULT_ALLOWED_COUNTRIES = [
   "ES",
   "PL",
   "CZ",
-];
+] satisfies Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry[];
 
-function getAllowedShippingCountries(): string[] {
+function isAllowedCountry(
+  code: string,
+): code is Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry {
+  return /^[A-Z]{2}$/.test(code);
+}
+
+function getAllowedShippingCountries(): Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry[] {
   const fromEnv = process.env.SHIPPING_ALLOWED_COUNTRIES;
   if (!fromEnv) {
     return DEFAULT_ALLOWED_COUNTRIES;
@@ -37,7 +44,7 @@ function getAllowedShippingCountries(): string[] {
   const parsed = fromEnv
     .split(",")
     .map((code) => code.trim().toUpperCase())
-    .filter((code) => /^[A-Z]{2}$/.test(code));
+    .filter(isAllowedCountry);
 
   return parsed.length ? parsed : DEFAULT_ALLOWED_COUNTRIES;
 }

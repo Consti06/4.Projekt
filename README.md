@@ -4,10 +4,11 @@ Custom Next.js website for selling original handmade paintings online with your 
 
 ## Features
 
-- Public storefront for artworks
-- Product pages with details and images
-- Cart and checkout foundation
-- Admin-ready structure for managing products and orders
+- Public storefront for original artworks
+- Cart and Stripe checkout flow
+- Stripe webhook order creation and stock updates
+- Admin login with order overview
+- Admin product management for creating, editing, publishing, deleting, and uploading artwork images
 
 ## Getting Started
 
@@ -17,6 +18,8 @@ Custom Next.js website for selling original handmade paintings online with your 
    `npm run dev`
 3. Open:
    `http://localhost:3000`
+4. Open admin:
+   `http://localhost:3000/admin/login`
 
 ## Controls
 
@@ -24,3 +27,4 @@ Custom Next.js website for selling original handmade paintings online with your 
 - `npm run build`: Build production bundle
 - `npm run start`: Run production server
 - `npm run lint`: Run ESLint checks
+- `npm run db:seed`: Seed sample products

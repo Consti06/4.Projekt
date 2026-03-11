@@ -1,8 +1,6 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-
+import { AdminNav } from "@/app/admin/components/admin-nav";
+import { requireAdminPage } from "@/lib/admin-guard";
 import { prisma } from "@/lib/prisma";
-import { ADMIN_SESSION_COOKIE, isValidAdminSessionToken } from "@/lib/admin-session";
 
 function formatMoney(value: number, currency: string): string {
   return new Intl.NumberFormat("en-US", {
@@ -13,11 +11,7 @@ function formatMoney(value: number, currency: string): string {
 }
 
 export default async function AdminOrdersPage() {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
-  if (!isValidAdminSessionToken(sessionToken)) {
-    redirect("/admin/login?next=/admin/orders");
-  }
+  await requireAdminPage("/admin/orders");
 
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
@@ -35,14 +29,8 @@ export default async function AdminOrdersPage() {
       <p className="mt-2 text-sm text-stone-700">
         Latest paid and pending orders. Add auth before production launch.
       </p>
-      <form action="/api/admin/logout" method="post" className="mt-4">
-        <button
-          type="submit"
-          className="rounded-lg border border-stone-300 px-3 py-1 text-sm text-stone-800 hover:bg-stone-100"
-        >
-          Logout
-        </button>
-      </form>
+
+      <AdminNav current="orders" />
 
       {orders.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-stone-400/60 p-6 text-stone-700">

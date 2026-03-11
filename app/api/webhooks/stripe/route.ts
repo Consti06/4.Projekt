@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
@@ -32,34 +33,8 @@ function parseCart(raw: string | undefined): CompactCartItem[] {
   }
 }
 
-async function handleCheckoutCompleted(event: {
-  id: string;
-  data: { object: { [key: string]: unknown } };
-}) {
-  const session = event.data.object as {
-    id: string;
-    amount_total?: number | null;
-    currency?: string | null;
-    customer_email?: string | null;
-    customer_details?: {
-      email?: string | null;
-    } | null;
-    metadata?: Record<string, string>;
-    payment_status?: string;
-    shipping_cost?: { amount_total?: number | null } | null;
-    shipping_details?: {
-      name?: string | null;
-      phone?: string | null;
-      address?: {
-        line1?: string | null;
-        line2?: string | null;
-        city?: string | null;
-        state?: string | null;
-        postal_code?: string | null;
-        country?: string | null;
-      } | null;
-    } | null;
-  };
+async function handleCheckoutCompleted(event: Stripe.Event) {
+  const session = event.data.object as Stripe.Checkout.Session;
 
   const existingPayment = await prisma.payment.findUnique({
     where: { providerPaymentId: session.id },
@@ -154,7 +129,7 @@ async function handleCheckoutCompleted(event: {
       },
     });
 
-    const shipping = session.shipping_details;
+    const shipping = session.collected_information?.shipping_details;
     if (shipping?.address?.line1) {
       await tx.address.create({
         data: {
@@ -166,7 +141,7 @@ async function handleCheckoutCompleted(event: {
           state: shipping.address.state || "Unknown",
           postalCode: shipping.address.postal_code || "Unknown",
           countryCode: shipping.address.country || "US",
-          phone: shipping.phone || null,
+          phone: session.customer_details?.phone || null,
         },
       });
     }
@@ -204,13 +179,13 @@ export async function POST(request: NextRequest) {
 
   const body = await request.text();
 
-  let event: { type: string; id: string; data: { object: { [key: string]: unknown } } };
+  let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, stripeWebhookSecret) as {
-      type: string;
-      id: string;
-      data: { object: { [key: string]: unknown } };
-    };
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      stripeWebhookSecret,
+    );
   } catch (error) {
     return NextResponse.json(
       {
